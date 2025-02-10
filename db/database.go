@@ -20,8 +20,7 @@ func InitDB() {
 	}
 	fmt.Println("Database connection successful")
 
-	// Auto Migrate the schemas
-	err = DB.AutoMigrate(&models.Product{}, &models.User{}, &models.UserInteraction{})
+	err = DB.AutoMigrate(&models.Product{}, &models.User{}, &models.UserInteraction{}, &models.Session{})
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)
 	}
