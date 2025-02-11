@@ -1,57 +1,43 @@
 package middleware
 
 import (
+	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/amcishara/web_Tracking_system/db"
 	"github.com/amcishara/web_Tracking_system/models"
-	"github.com/amcishara/web_Tracking_system/utils"
 	"github.com/gin-gonic/gin"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var tokenString string
-
-		// Get token from Authorization header
-		authHeader := c.GetHeader("Authorization")
-		if authHeader != "" {
-			parts := strings.Split(authHeader, " ")
-			if len(parts) == 2 && parts[0] == "Bearer" {
-				tokenString = parts[1]
-			}
-		}
-
-		// If no token in header, try cookie
-		if tokenString == "" {
-			var err error
-			tokenString, err = c.Cookie("token")
-			if err != nil {
-				c.JSON(401, gin.H{"error": "Authorization required"})
+		// Get token from header
+		token := c.GetHeader("Authorization")
+		if token == "" {
+			// Try to get from cookie if not in header
+			token, _ = c.Cookie("token")
+			if token == "" {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
 				c.Abort()
 				return
 			}
 		}
 
-		// Check if token exists in sessions table
-		session, err := models.GetSession(db.DB, tokenString)
-		if err != nil {
-			c.JSON(401, gin.H{"error": "Invalid or expired session"})
+		// Remove Bearer prefix if present
+		token = strings.TrimPrefix(token, "Bearer ")
+
+		// Get session
+		var session models.Session
+		if err := db.DB.Where("token = ?", token).First(&session).Error; err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
-		// Validate JWT token
-		claims, err := utils.ValidateToken(tokenString)
-		if err != nil {
-			c.JSON(401, gin.H{"error": "Invalid token"})
-			c.Abort()
-			return
-		}
-
-		// Add claims to context
+		// Set user ID in context
 		c.Set("user_id", session.UserID)
-		c.Set("email", (*claims)["email"])
+		fmt.Printf("Setting user_id in context: %d\n", session.UserID) // Add debug log
 
 		c.Next()
 	}

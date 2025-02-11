@@ -9,11 +9,16 @@ import (
 )
 
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
+	UserID    uint      `gorm:"primaryKey;column:user_id" json:"user_id"`
 	Email     string    `gorm:"unique;not null" json:"email"`
 	Password  string    `gorm:"not null" json:"-"`
-	Role      string    `gorm:"not null" json:"role"`
+	Role      string    `gorm:"default:user" json:"role"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+// TableName overrides the table name
+func (User) TableName() string {
+	return "users"
 }
 
 // User-related functions
@@ -45,7 +50,7 @@ func ValidateUser(db *gorm.DB, u *User) (uint, error) {
 		return 0, fmt.Errorf("invalid credentials")
 	}
 
-	return existingUser.ID, nil
+	return existingUser.UserID, nil
 }
 
 func GetUserByID(db *gorm.DB, id int) (*User, error) {
@@ -60,7 +65,7 @@ func GetUserByID(db *gorm.DB, id int) (*User, error) {
 func UpdateUser(db *gorm.DB, u *User) error {
 	// Check if email is being changed and if it already exists
 	var count int64
-	db.Model(&User{}).Where("email = ? AND id != ?", u.Email, u.ID).Count(&count)
+	db.Model(&User{}).Where("email = ? AND user_id != ?", u.Email, u.UserID).Count(&count)
 	if count > 0 {
 		return fmt.Errorf("email '%s' already taken", u.Email)
 	}

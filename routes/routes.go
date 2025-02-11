@@ -17,6 +17,7 @@ func SetupRouter(router *gin.Engine) {
 	{
 		protected.PUT("/user/:id", updateUser)
 		protected.DELETE("/user/:id", deleteUser)
+		protected.GET("/my/view-history", getUserViewHistory)
 	}
 
 	// Customer routes (with cart functionality)
@@ -31,7 +32,15 @@ func SetupRouter(router *gin.Engine) {
 
 	// Public product routes
 	router.GET("/products", getProducts)
-	router.GET("/products/:id", getProduct)
+	router.GET("/products/search", searchProducts)
+	router.GET("/products/:id", getProductPublic)
+
+	// Protected product routes - change path to make it clearer
+	auth := router.Group("/api/auth")
+	auth.Use(middleware.AuthMiddleware())
+	{
+		auth.GET("/products/:id", getProductAuth)
+	}
 
 	// Admin routes
 	admin := router.Group("/admin")
@@ -42,8 +51,15 @@ func SetupRouter(router *gin.Engine) {
 		admin.PUT("/users/:id", manageUser)
 		admin.GET("/analytics", getAnalytics)
 		admin.POST("/products", createProduct)
+		admin.POST("/products/bulk", createBulkProducts)
 		admin.PUT("/products/:id", updateProduct)
 		admin.DELETE("/products/:id", deleteProduct)
 		admin.DELETE("/users/:id", deleteUserAdmin)
 	}
+
+	// Guest routes
+	router.GET("/guest/view-history", getGuestViewHistory)
+
+	// Inside SetupRouter function, add with public routes
+	router.GET("/trending", getTrendingItems)
 }

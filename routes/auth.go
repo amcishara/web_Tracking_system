@@ -41,14 +41,16 @@ func login(c *gin.Context) {
 		return
 	}
 
-	// Generate JWT token with correct user ID
+	fmt.Printf("Login - User authenticated with ID: %d\n", userID)
+
+	// Generate token
 	token, err := utils.GenerateToken(userID, user.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
-	// Create session with correct user ID
+	// Create session
 	if err := models.CreateSession(db.DB, userID, token); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create session"})
 		return
@@ -83,7 +85,7 @@ func updateUser(c *gin.Context) {
 		return
 	}
 
-	user.ID = uint(id)
+	user.UserID = uint(id)
 	if err := models.UpdateUser(db.DB, &user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

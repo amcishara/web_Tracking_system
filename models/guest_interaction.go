@@ -3,20 +3,24 @@ package models
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-// For registered users
-type UserInteraction struct {
-	UserID    uint      `gorm:"primaryKey;column:user_id" json:"user_id"`
+type GuestInteraction struct {
+	GuestID   string    `gorm:"primaryKey;column:guest_id" json:"guest_id"`
 	ProductID uint      `gorm:"primaryKey;not null" json:"product_id"`
 	ViewedAt  time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"viewed_at"`
-	User      User      `gorm:"foreignKey:UserID;references:UserID"`
 	Product   Product   `gorm:"foreignKey:ProductID"`
 }
 
-// Track product view for authenticated user
-func TrackUserView(db *gorm.DB, userID uint, productID uint) error {
+// Generate new guest ID
+func GenerateGuestID() string {
+	return uuid.New().String()
+}
+
+// Track product view for guest user
+func TrackGuestView(db *gorm.DB, guestID string, productID uint) error {
 	// Start transaction
 	tx := db.Begin()
 	if tx.Error != nil {
@@ -24,8 +28,8 @@ func TrackUserView(db *gorm.DB, userID uint, productID uint) error {
 	}
 
 	// Create interaction
-	interaction := UserInteraction{
-		UserID:    userID,
+	interaction := GuestInteraction{
+		GuestID:   guestID,
 		ProductID: productID,
 	}
 	if err := tx.Create(&interaction).Error; err != nil {
@@ -49,14 +53,14 @@ func TrackUserView(db *gorm.DB, userID uint, productID uint) error {
 	return tx.Commit().Error
 }
 
-// Get user's view history
-func GetUserViewHistory(db *gorm.DB, userID uint) ([]Product, error) {
+// Get guest's view history
+func GetGuestViewHistory(db *gorm.DB, guestID string) ([]Product, error) {
 	var products []Product
-	err := db.Table("user_interactions").
+	err := db.Table("guest_interactions").
 		Select("products.id, products.name, products.description, products.price, products.category, products.stock").
-		Joins("JOIN products ON user_interactions.product_id = products.id").
-		Where("user_interactions.user_id = ?", userID).
-		Order("user_interactions.viewed_at DESC").
+		Joins("JOIN products ON guest_interactions.product_id = products.id").
+		Where("guest_interactions.guest_id = ?", guestID).
+		Order("guest_interactions.viewed_at DESC").
 		Find(&products).Error
 	return products, err
 }

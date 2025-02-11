@@ -9,24 +9,17 @@ import (
 
 type Product struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
-	Name        string    `gorm:"not null" json:"name"`
+	Name        string    `gorm:"unique;not null" json:"name"`
 	Description string    `json:"description"`
 	Price       float64   `gorm:"not null" json:"price"`
-	Category    string    `json:"category"`
+	Category    string    `gorm:"not null" json:"category"`
 	Stock       int       `gorm:"not null" json:"stock"`
 	CreatedAt   time.Time `json:"-"`
 	UpdatedAt   time.Time `json:"-"`
 }
 
-func CreateProduct(db *gorm.DB, p *Product) error {
-	var count int64
-	db.Model(&Product{}).Where("name = ?", p.Name).Count(&count)
-	if count > 0 {
-		return fmt.Errorf("product with name '%s' already exists", p.Name)
-	}
-
-	result := db.Create(p)
-	return result.Error
+func CreateProduct(db *gorm.DB, product *Product) error {
+	return db.Create(product).Error
 }
 
 func GetAllProducts(db *gorm.DB) []Product {
@@ -65,4 +58,49 @@ func IsProductNameExists(db *gorm.DB, name string) bool {
 	var count int64
 	db.Model(&Product{}).Where("name = ?", name).Count(&count)
 	return count > 0
+}
+
+// Add new function for search and sort
+func SearchProducts(db *gorm.DB, query string, category string, sortBy string, order string) ([]Product, error) {
+	var products []Product
+	tx := db.Model(&Product{})
+
+	// Apply category filter if provided
+	if category != "" {
+		tx = tx.Where("category = ?", category)
+	}
+
+	// Apply search if query exists (now only searches name and description)
+	if query != "" {
+		searchQuery := "%" + query + "%"
+		tx = tx.Where("(name LIKE ? OR description LIKE ?)",
+			searchQuery, searchQuery)
+	}
+
+	// Apply sorting
+	switch sortBy {
+	case "price":
+		if order == "desc" {
+			tx = tx.Order("price DESC")
+		} else {
+			tx = tx.Order("price ASC")
+		}
+	case "name":
+		if order == "desc" {
+			tx = tx.Order("name DESC")
+		} else {
+			tx = tx.Order("name ASC")
+		}
+	case "date": // Add sorting by date
+		if order == "desc" {
+			tx = tx.Order("created_at DESC")
+		} else {
+			tx = tx.Order("created_at ASC")
+		}
+	default:
+		tx = tx.Order("id ASC") // Default sorting
+	}
+
+	err := tx.Find(&products).Error
+	return products, err
 }

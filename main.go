@@ -7,12 +7,21 @@ import (
 )
 
 func main() {
+	// Set Gin to Release mode
+	gin.SetMode(gin.ReleaseMode)
+
 	// Initialize database
 	db.InitDB()
 
-	server := gin.Default()
-	routes.SetupRouter(server)
+	// Create router with default middleware
+	router := gin.Default()
 
-	server.Run(":8000")
+	// Set trusted proxies
+	router.SetTrustedProxies([]string{"127.0.0.1"})
+
+	// Setup routes
+	routes.SetupRouter(router)
+
+	// Start server
+	router.Run(":8000")
 }
-
