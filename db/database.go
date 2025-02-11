@@ -25,7 +25,7 @@ func InitDB() {
 	hasProducts := DB.Migrator().HasTable(&models.Product{})
 	hasInteractions := DB.Migrator().HasTable("user_interactions")
 	hasGuestInteractions := DB.Migrator().HasTable("guest_interactions")
-	hasTrendingItems := DB.Migrator().HasTable("trending_items")
+	hasTrending := DB.Migrator().HasTable("trending_products")
 
 	// Only create tables if they don't exist
 	if !hasUsers {
@@ -69,7 +69,7 @@ func InitDB() {
 	if !hasGuestInteractions {
 		err = DB.Exec(`
 			CREATE TABLE guest_interactions (
-				guest_id VARCHAR(36) NOT NULL,
+				guest_id VARCHAR(255) NOT NULL,
 				product_id BIGINT UNSIGNED NOT NULL,
 				viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 				PRIMARY KEY (guest_id, product_id, viewed_at),
@@ -81,17 +81,17 @@ func InitDB() {
 		}
 	}
 
-	if !hasTrendingItems {
+	if !hasTrending {
 		err = DB.Exec(`
-			CREATE TABLE trending_items (
-				product_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-				product_title VARCHAR(255) NOT NULL,
-				view_count BIGINT UNSIGNED DEFAULT 0,
+			CREATE TABLE trending_products (
+				product_id BIGINT UNSIGNED PRIMARY KEY,
+				title VARCHAR(255) NOT NULL,
+				total_views INT NOT NULL DEFAULT 0,
 				FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 			)
 		`).Error
 		if err != nil {
-			log.Fatal("Failed to create trending_items table:", err)
+			log.Fatal("Failed to create trending_products table:", err)
 		}
 	}
 

@@ -14,8 +14,24 @@ type Product struct {
 	Price       float64   `gorm:"not null" json:"price"`
 	Category    string    `gorm:"not null" json:"category"`
 	Stock       int       `gorm:"not null" json:"stock"`
-	CreatedAt   time.Time `json:"-"`
-	UpdatedAt   time.Time `json:"-"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// Add this struct for API responses
+type ProductResponse struct {
+	ID          uint    `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	Category    string  `json:"category"`
+	Stock       int     `json:"stock"`
+}
+
+type ProductWithRecommendations struct {
+	*ProductResponse             `json:"product"`
+	CollaborativeRecommendations []ProductRecommendation `json:"customers_also_viewed"`
+	CategoryRecommendations      []ProductRecommendation `json:"category_recommendations"`
 }
 
 func CreateProduct(db *gorm.DB, product *Product) error {
@@ -28,13 +44,24 @@ func GetAllProducts(db *gorm.DB) []Product {
 	return products
 }
 
-func GetProductByID(db *gorm.DB, id int) (*Product, error) {
+// Modify GetProductByID to use the new response type
+func GetProductByID(db *gorm.DB, id int) (*ProductResponse, error) {
 	var product Product
 	result := db.First(&product, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return &product, nil
+
+	// Convert to response type
+	response := &ProductResponse{
+		ID:          product.ID,
+		Name:        product.Name,
+		Description: product.Description,
+		Price:       product.Price,
+		Category:    product.Category,
+		Stock:       product.Stock,
+	}
+	return response, nil
 }
 
 func UpdateProduct(db *gorm.DB, p *Product) error {

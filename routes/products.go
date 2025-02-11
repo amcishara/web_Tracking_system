@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/amcishara/web_Tracking_system/db"
 	"github.com/amcishara/web_Tracking_system/models"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func createProduct(c *gin.Context) {
@@ -115,7 +117,27 @@ func getProducts(c *gin.Context) {
 	c.JSON(http.StatusOK, products)
 }
 
-func getProductPublic(c *gin.Context) {
+func getProductAsGuest(c *gin.Context) {
+	// First check if user is logged in by looking for a valid token
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		token, _ = c.Cookie("token")
+	}
+
+	// If token exists, check if it's valid
+	if token != "" {
+		token = strings.TrimPrefix(token, "Bearer ")
+		var session models.Session
+		if err := db.DB.Where("token = ?", token).First(&session).Error; err == nil {
+			// Valid session found - user is logged in
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "This route is only for guest users. Please use /products/:id for authenticated users",
+			})
+			return
+		}
+	}
+
+	// Continue with guest view logic
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
@@ -128,29 +150,63 @@ func getProductPublic(c *gin.Context) {
 		return
 	}
 
-	// Check if user is authenticated
-	if userID, exists := c.Get("user_id"); exists {
-		fmt.Printf("Found user_id in context: %v\n", userID)
-		// Track view for authenticated user
-		if err := models.TrackUserView(db.DB, userID.(uint), product.ID); err != nil {
-			fmt.Printf("Failed to track user view: %v\n", err)
-		}
-	} else {
-		// Handle guest user
-		guestID, err := c.Cookie("guest_id")
-		if err != nil || guestID == "" {
-			// Generate new guest ID if not exists
-			guestID = models.GenerateGuestID()
-			c.SetCookie("guest_id", guestID, 86400*30, "/", "", false, true) // 30 days expiry
-		}
+	// Handle guest view tracking
+	guestID, err := c.Cookie("guest_id")
+	if err != nil || guestID == "" {
+		guestID = generateGuestID()
+		c.SetCookie("guest_id", guestID, 86400*30, "/", "", false, true)
+	}
 
-		// Track guest view
-		if err := models.TrackGuestView(db.DB, guestID, product.ID); err != nil {
-			fmt.Printf("Failed to track guest view: %v\n", err)
-		}
+	// Track in guest_interactions table
+	if err := models.TrackGuestView(db.DB, guestID, product.ID); err != nil {
+		fmt.Printf("Failed to track guest view: %v\n", err)
 	}
 
 	c.JSON(http.StatusOK, product)
+}
+
+func getProductAsUser(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	product, err := models.GetProductByID(db.DB, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+
+	// Track in user_interactions table
+	userID, _ := c.Get("user_id")
+	if err := models.TrackUserView(db.DB, userID.(uint), product.ID); err != nil {
+		fmt.Printf("Failed to track user view: %v\n", err)
+	}
+
+	// Get recommendations
+	collaborative, err := models.GetCollaborativeRecommendations(db.DB, product.ID, 5)
+	if err != nil {
+		fmt.Printf("Failed to get collaborative recommendations: %v\n", err)
+	}
+
+	categoryBased, err := models.GetCategoryRecommendations(db.DB, product.ID, 5)
+	if err != nil {
+		fmt.Printf("Failed to get category recommendations: %v\n", err)
+	}
+
+	response := models.ProductWithRecommendations{
+		ProductResponse:              product,
+		CollaborativeRecommendations: collaborative,
+		CategoryRecommendations:      categoryBased,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// Helper function to generate guest ID
+func generateGuestID() string {
+	return fmt.Sprintf("guest_%s", uuid.New().String())
 }
 
 func getProductAuth(c *gin.Context) {
@@ -259,41 +315,28 @@ func getUserViewHistory(c *gin.Context) {
 	})
 }
 
-// Add new handler for guest view history
-func getGuestViewHistory(c *gin.Context) {
-	guestID, err := c.Cookie("guest_id")
-	if err != nil || guestID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No guest ID found"})
-		return
-	}
-
-	products, err := models.GetGuestViewHistory(db.DB, guestID)
+func getTrendingProducts(c *gin.Context) {
+	trending, err := models.GetTrendingProducts(db.DB, 10) // Get top 10 trending products
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get view history"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get trending products"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"history": products,
-	})
-}
-
-func getTrendingItems(c *gin.Context) {
-	// Get limit from query parameter, default to 10
-	limit := 10
-	if limitStr := c.Query("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
-			limit = l
+	// Get full product details for each trending item
+	var trendingWithDetails []gin.H
+	for _, item := range trending {
+		product, err := models.GetProductByID(db.DB, int(item.ProductID))
+		if err != nil {
+			continue // Skip if product not found
 		}
-	}
 
-	items, err := models.GetTrendingItems(db.DB, limit)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get trending items"})
-		return
+		trendingWithDetails = append(trendingWithDetails, gin.H{
+			"product":     product,
+			"total_views": item.TotalViews,
+		})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"trending": items,
+		"trending": trendingWithDetails,
 	})
 }
