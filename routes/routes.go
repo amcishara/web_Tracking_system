@@ -17,9 +17,16 @@ func SetupRouter(router *gin.Engine) {
 	{
 		protected.PUT("/user/:id", updateUser)
 		protected.DELETE("/user/:id", deleteUser)
-		protected.POST("/products", createProduct)
-		protected.PUT("/products/:id", updateProduct)
-		protected.DELETE("/products/:id", deleteProduct)
+	}
+
+	// Customer routes (with cart functionality)
+	customer := router.Group("/")
+	customer.Use(middleware.AuthMiddleware())
+	customer.Use(middleware.CustomerMiddleware())
+	{
+		customer.POST("/cart", addToCart)
+		customer.DELETE("/cart/:id", removeFromCart)
+		customer.GET("/cart", getCart)
 	}
 
 	// Public product routes

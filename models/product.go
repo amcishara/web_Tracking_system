@@ -10,12 +10,12 @@ import (
 type Product struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	Name        string    `gorm:"not null" json:"name"`
-	Description string    `gorm:"type:text;not null" json:"description"`
+	Description string    `json:"description"`
 	Price       float64   `gorm:"not null" json:"price"`
-	Category    string    `gorm:"not null" json:"category"`
+	Category    string    `json:"category"`
 	Stock       int       `gorm:"not null" json:"stock"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	CreatedAt   time.Time `json:"-"`
+	UpdatedAt   time.Time `json:"-"`
 }
 
 func CreateProduct(db *gorm.DB, p *Product) error {
