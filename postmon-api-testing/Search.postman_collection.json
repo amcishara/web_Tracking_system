@@ -1,0 +1,330 @@
+{
+	"info": {
+		"_postman_id": "9bfeabd2-445f-485d-a95a-cbaa6d04c258",
+		"name": "Search",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29596400"
+	},
+	"item": [
+		{
+			"name": "basic_search",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?q=iPhone",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "iPhone"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "search_price_desc",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?q=phone&sort=price&order=desc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "phone"
+						},
+						{
+							"key": "sort",
+							"value": "price"
+						},
+						{
+							"key": "order",
+							"value": "desc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "search_price_asc",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?q=phone&sort=price&order=asc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "phone"
+						},
+						{
+							"key": "sort",
+							"value": "price"
+						},
+						{
+							"key": "order",
+							"value": "asc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "invalid_search",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?sort=invalid&order=desc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "sort",
+							"value": "invalid"
+						},
+						{
+							"key": "order",
+							"value": "desc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "category_search",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?category=Smartphones",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "category",
+							"value": "Smartphones"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Category and Text Searc",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?category=Smartphones&q=Pro",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "category",
+							"value": "Smartphones"
+						},
+						{
+							"key": "q",
+							"value": "Pro"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sort Products in Category",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?category=Smartphones&sort=price&order=desc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "category",
+							"value": "Smartphones"
+						},
+						{
+							"key": "sort",
+							"value": "price"
+						},
+						{
+							"key": "order",
+							"value": "desc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search with All Parameters",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?category=Smartphones&q=Pro&sort=price&order=desc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "category",
+							"value": "Smartphones"
+						},
+						{
+							"key": "q",
+							"value": "Pro"
+						},
+						{
+							"key": "sort",
+							"value": "price"
+						},
+						{
+							"key": "order",
+							"value": "desc"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sort by newest first",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?order=desc&sort=date",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "order",
+							"value": "desc"
+						},
+						{
+							"key": "sort",
+							"value": "date"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Full search with date sorting",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/products/search?q=iPhone&category=Smartphones&sort=date&order=desc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"products",
+						"search"
+					],
+					"query": [
+						{
+							"key": "q",
+							"value": "iPhone"
+						},
+						{
+							"key": "category",
+							"value": "Smartphones"
+						},
+						{
+							"key": "sort",
+							"value": "date"
+						},
+						{
+							"key": "order",
+							"value": "desc"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

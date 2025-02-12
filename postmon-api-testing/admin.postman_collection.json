@@ -1,0 +1,337 @@
+{
+	"info": {
+		"_postman_id": "d6f2521c-95ec-495f-b65a-c35ca612153b",
+		"name": "admin",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29596400"
+	},
+	"item": [
+		{
+			"name": "adminSignUp",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"admin@example.com\",\r\n    \"password\": \"admin123\",\r\n    \"role\": \"admin\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/signup",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"signup"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "adminLogin",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImNoYW1pbGlzaGFyYUBleGFtcGxlLmNvbSIsImV4cCI6MTczOTM0ODc4NSwidXNlcl9pZCI6Mn0.y8dlpFJFzseud66ftfshu1CApF8suG2RRH29nOkAz2Y",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InRlc3Q0QGV4YW1wbGUuY29tIiwiZXhwIjoxNzM5MzI5MDUxLCJ1c2VyX2lkIjo1fQ.TI4mHi9tPhKn1q6a7Iq8eOi9KuqZUhoOHfhHCuW7mh8",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"mainadmin@example.com\",\r\n    \"password\": \"password123\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create_products",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwiZXhwIjoxNzM5Mjk3MjkxLCJ1c2VyX2lkIjo3fQ.sbDWl6IdZ8ATCxOFBAhH5BVcZ5UMbggKlZwEih1x7ZU",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"nokia 1100\",\r\n    \"description\": \"Description\",\r\n    \"price\": 99.99,\r\n    \"category\": \"Electronics\",\r\n    \"stock\": 100\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/admin/products",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"products"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "bulk product create",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFtY2hhbWlsaXNoYXJhQGV4YW1wbGUuY29tIiwiZXhwIjoxNzM5MzYwOTU2LCJ1c2VyX2lkIjoxfQ.DV8Ya0asYy194lBhR9KNKsZT30P9mLLa8XG3sTq4vHs",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\r\n  {\r\n    \"name\": \"Apple iPhone 15 Pro Max\",\r\n    \"description\": \"Latest flagship iPhone with A17 Pro chip and titanium design\",\r\n    \"price\": 1199.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 30\r\n  },\r\n  {\r\n    \"name\": \"Apple iPhone 14 Pro\",\r\n    \"description\": \"High-end iPhone with ProMotion and Dynamic Island\",\r\n    \"price\": 999.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 40\r\n  },\r\n  {\r\n    \"name\": \"Apple iPhone 13\",\r\n    \"description\": \"Popular iPhone model with A15 Bionic chip\",\r\n    \"price\": 699.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 50\r\n  },\r\n  {\r\n    \"name\": \"Apple iPhone SE (2023)\",\r\n    \"description\": \"Compact iPhone with Touch ID and A15 chip\",\r\n    \"price\": 429.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 60\r\n  },\r\n  {\r\n    \"name\": \"Samsung Galaxy Z Fold 5\",\r\n    \"description\": \"Innovative foldable phone with large inner display\",\r\n    \"price\": 1799.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 15\r\n  },\r\n  {\r\n    \"name\": \"Samsung Galaxy Z Flip 5\",\r\n    \"description\": \"Compact foldable phone with Snapdragon 8 Gen 2\",\r\n    \"price\": 999.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 25\r\n  },\r\n  {\r\n    \"name\": \"Google Pixel 8 Pro\",\r\n    \"description\": \"AI-powered smartphone with advanced camera features\",\r\n    \"price\": 899.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 35\r\n  },\r\n  {\r\n    \"name\": \"OnePlus 11 Pro\",\r\n    \"description\": \"Flagship OnePlus device with Hasselblad camera system\",\r\n    \"price\": 749.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 30\r\n  },\r\n  {\r\n    \"name\": \"Xiaomi 13 Ultra\",\r\n    \"description\": \"High-performance smartphone with Leica-tuned cameras\",\r\n    \"price\": 1299.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 20\r\n  },\r\n  {\r\n    \"name\": \"Sony Xperia 1 V\",\r\n    \"description\": \"Professional-grade smartphone with 4K OLED display\",\r\n    \"price\": 1399.99,\r\n    \"category\": \"Smartphones\",\r\n    \"stock\": 10\r\n  }\r\n]\r\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/admin/products/bulk",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"products",
+						"bulk"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get_All_users",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1haW5hZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTczOTQxOTMyNywidXNlcl9pZCI6OX0.L-pM2fgwc6jADygbd4ncHi9VtbXf1hATY0rpDqFLeOw",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8000/admin/users",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get_analytics",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1haW5hZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTczOTQxOTMyNywidXNlcl9pZCI6OX0.L-pM2fgwc6jADygbd4ncHi9VtbXf1hATY0rpDqFLeOw",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8000/admin/analytics",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"analytics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update_users",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwiZXhwIjoxNzM5Mjk3MjkxLCJ1c2VyX2lkIjo3fQ.sbDWl6IdZ8ATCxOFBAhH5BVcZ5UMbggKlZwEih1x7ZU",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"email\": \"updated@example.com\",\r\n    \"role\": \"user\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/admin/users/2?Authorization=Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwiZXhwIjoxNzM5Mjk3MjkxLCJ1c2VyX2lkIjo3fQ.sbDWl6IdZ8ATCxOFBAhH5BVcZ5UMbggKlZwEih1x7ZU",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"users",
+						"2"
+					],
+					"query": [
+						{
+							"key": "Authorization",
+							"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwiZXhwIjoxNzM5Mjk3MjkxLCJ1c2VyX2lkIjo3fQ.sbDWl6IdZ8ATCxOFBAhH5BVcZ5UMbggKlZwEih1x7ZU"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteProduct",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6Im1haW5hZG1pbkBleGFtcGxlLmNvbSIsImV4cCI6MTczOTQyMDQ2NCwidXNlcl9pZCI6OX0.tqnwlMp_QiS9ygykfns4l2iqyTnqpVoqwaLzhmCO9TM",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8000/admin/delete-products/3",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"delete-products",
+						"3"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deleteuser",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8000/admin/users/4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"users",
+						"4"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "update-products",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"smart bulbs\",\r\n    \"description\": \"uv protected\",\r\n    \"price\": 149.99,\r\n    \"category\": \"Electronics\",\r\n    \"stock\": 25\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8000/admin/update-products/3",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"admin",
+						"update-products",
+						"3"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
