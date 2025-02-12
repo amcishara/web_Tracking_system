@@ -150,58 +150,92 @@ func getProductAsGuest(c *gin.Context) {
 		return
 	}
 
-	// Handle guest view tracking
-	guestID, err := c.Cookie("guest_id")
-	if err != nil || guestID == "" {
-		guestID = generateGuestID()
-		c.SetCookie("guest_id", guestID, 86400*30, "/", "", false, true)
+	// Get or create guest ID from cookie
+	guestID, _ := c.Cookie("guest_id")
+	if guestID == "" {
+		guestID = uuid.New().String()
+		c.SetCookie("guest_id", guestID, 86400*30, "/", "localhost", false, true)
 	}
 
-	// Track in guest_interactions table
-	if err := models.TrackGuestView(db.DB, guestID, product.ID); err != nil {
+	// Track the view
+	if err := models.TrackGuestView(db.DB, guestID, uint(id)); err != nil {
 		fmt.Printf("Failed to track guest view: %v\n", err)
 	}
 
-	c.JSON(http.StatusOK, product)
+	// Get collaborative recommendations
+	collaborative, err := models.GetCollaborativeRecommendations(db.DB, uint(id), 5)
+	if err != nil {
+		fmt.Printf("Failed to get collaborative recommendations: %v\n", err)
+	}
+
+	// Get category recommendations
+	category, err := models.GetCategoryRecommendations(db.DB, uint(id), 5)
+	if err != nil {
+		fmt.Printf("Failed to get category recommendations: %v\n", err)
+	}
+
+	// Get trending products
+	trending, err := models.GetTrendingProducts(db.DB, 5)
+	if err != nil {
+		fmt.Printf("Failed to get trending products: %v\n", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"product":               product,
+		"customers_also_viewed": collaborative,
+		"other_recommendations": category,
+		"trending_products":     trending,
+	})
 }
 
 func getProductAsUser(c *gin.Context) {
+	// Get product ID from URL
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
 		return
 	}
 
+	// Get user ID from context
+	userID, _ := c.Get("user_id")
+
+	// Get product details
 	product, err := models.GetProductByID(db.DB, id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 		return
 	}
 
-	// Track in user_interactions table
-	userID, _ := c.Get("user_id")
-	if err := models.TrackUserView(db.DB, userID.(uint), product.ID); err != nil {
-		fmt.Printf("Failed to track user view: %v\n", err)
+	// Track the view
+	if err := models.TrackUserView(db.DB, userID.(uint), uint(id)); err != nil {
+		// Log the error but don't return, as we still want to show the product
+		fmt.Printf("Failed to track view: %v\n", err)
 	}
 
-	// Get recommendations
-	collaborative, err := models.GetCollaborativeRecommendations(db.DB, product.ID, 5)
+	// Get collaborative recommendations
+	collaborative, err := models.GetCollaborativeRecommendations(db.DB, uint(id), 5)
 	if err != nil {
 		fmt.Printf("Failed to get collaborative recommendations: %v\n", err)
 	}
 
-	categoryBased, err := models.GetCategoryRecommendations(db.DB, product.ID, 5)
+	// Get category recommendations
+	category, err := models.GetCategoryRecommendations(db.DB, uint(id), 5)
 	if err != nil {
 		fmt.Printf("Failed to get category recommendations: %v\n", err)
 	}
 
-	response := models.ProductWithRecommendations{
-		ProductResponse:              product,
-		CollaborativeRecommendations: collaborative,
-		CategoryRecommendations:      categoryBased,
+	// Get trending products
+	trending, err := models.GetTrendingProducts(db.DB, 5)
+	if err != nil {
+		fmt.Printf("Failed to get trending products: %v\n", err)
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, gin.H{
+		"product":               product,
+		"customers_also_viewed": collaborative,
+		"other_recommendations": category,
+		"trending_products":     trending,
+	})
 }
 
 // Helper function to generate guest ID
@@ -316,28 +350,14 @@ func getUserViewHistory(c *gin.Context) {
 }
 
 func getTrendingProducts(c *gin.Context) {
-	trending, err := models.GetTrendingProducts(db.DB, 10) // Get top 10 trending products
+	trending, err := models.GetTrendingProducts(db.DB, 5) // Get top 5 trending products
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get trending products"})
 		return
 	}
 
-	// Get full product details for each trending item
-	var trendingWithDetails []gin.H
-	for _, item := range trending {
-		product, err := models.GetProductByID(db.DB, int(item.ProductID))
-		if err != nil {
-			continue // Skip if product not found
-		}
-
-		trendingWithDetails = append(trendingWithDetails, gin.H{
-			"product":     product,
-			"total_views": item.TotalViews,
-		})
-	}
-
 	c.JSON(http.StatusOK, gin.H{
-		"trending": trendingWithDetails,
+		"trending_products": trending,
 	})
 }
 
