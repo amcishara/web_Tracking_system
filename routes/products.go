@@ -402,3 +402,99 @@ func adminDeleteProduct(c *gin.Context) {
 		"message": fmt.Sprintf("Product %d and all related data deleted successfully", id),
 	})
 }
+
+// AdminProductUpdate represents the request body for updating a product
+type AdminProductUpdate struct {
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	Category    string  `json:"category"`
+	Stock       int     `json:"stock"`
+}
+
+func adminUpdateProduct(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID format"})
+		return
+	}
+
+	// Get existing product
+	var existingProduct models.Product
+	if err := db.DB.First(&existingProduct, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		return
+	}
+
+	// Bind update request
+	var update AdminProductUpdate
+	if err := c.ShouldBindJSON(&update); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Start transaction
+	tx := db.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		return
+	}
+
+	// Check if new name conflicts with existing products (excluding current product)
+	if update.Name != existingProduct.Name {
+		var count int64
+		if err := tx.Model(&models.Product{}).Where("name = ? AND id != ?", update.Name, id).Count(&count).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check product name"})
+			return
+		}
+		if count > 0 {
+			tx.Rollback()
+			c.JSON(http.StatusConflict, gin.H{"error": "Product name already exists"})
+			return
+		}
+	}
+
+	// Update product
+	updates := map[string]interface{}{
+		"name":        update.Name,
+		"description": update.Description,
+		"price":       update.Price,
+		"category":    update.Category,
+		"stock":       update.Stock,
+	}
+
+	if err := tx.Model(&existingProduct).Updates(updates).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update product"})
+		return
+	}
+
+	// Update trending products table if name changed
+	if update.Name != existingProduct.Name {
+		if err := tx.Exec("UPDATE trending_products SET title = ? WHERE product_id = ?", update.Name, id).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update trending data"})
+			return
+		}
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit changes"})
+		return
+	}
+
+	// Get updated product for response
+	var updatedProduct models.Product
+	if err := db.DB.First(&updatedProduct, id).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated product"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Product updated successfully",
+		"product": updatedProduct,
+	})
+}
