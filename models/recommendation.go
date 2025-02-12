@@ -13,7 +13,7 @@ type ProductRecommendation struct {
 func GetCollaborativeRecommendations(db *gorm.DB, productID uint, limit int) ([]ProductRecommendation, error) {
 	var recommendations []ProductRecommendation
 
-	// First get recommendations from user interactions
+	// First try to get collaborative recommendations
 	err := db.Table("products").
 		Select("products.id, products.name, products.description, products.price, products.category, products.stock, COUNT(*) as view_count").
 		Joins("JOIN user_interactions ui1 ON products.id = ui1.product_id").
@@ -24,29 +24,46 @@ func GetCollaborativeRecommendations(db *gorm.DB, productID uint, limit int) ([]
 		Limit(limit).
 		Find(&recommendations).Error
 
-	if err != nil {
-		return nil, err
-	}
+	// If no collaborative recommendations found (new product), fall back to category-based
+	if err != nil || len(recommendations) == 0 {
+		var product Product
+		if err := db.First(&product, productID).Error; err != nil {
+			return nil, err
+		}
 
-	// If we don't have enough recommendations, add from guest interactions
-	if len(recommendations) < limit {
-		var guestRecommendations []ProductRecommendation
-		err := db.Table("products").
-			Select("products.id, products.name, products.description, products.price, products.category, products.stock, COUNT(*) as view_count").
-			Joins("JOIN guest_interactions gi1 ON products.id = gi1.product_id").
-			Joins("JOIN guest_interactions gi2 ON gi1.guest_id = gi2.guest_id AND gi2.product_id = ?", productID).
-			Where("products.id != ?", productID).
-			Group("products.id").
-			Order("view_count DESC").
-			Limit(limit - len(recommendations)).
-			Find(&guestRecommendations).Error
+		// Get popular products from same category
+		err = db.Table("products").
+			Select(`
+				products.id, 
+				products.name, 
+				products.description, 
+				products.price, 
+				products.category, 
+				products.stock,
+				COALESCE(view_counts.total_views, 0) as view_count
+			`).
+			Joins(`LEFT JOIN (
+				SELECT product_id, COUNT(*) as total_views 
+				FROM user_interactions 
+				GROUP BY product_id
+			) view_counts ON products.id = view_counts.product_id`).
+			Where("category = ? AND products.id != ?", product.Category, productID).
+			Order("view_count DESC, created_at DESC"). // Consider newer products if no views
+			Limit(limit).
+			Find(&recommendations).Error
 
-		if err == nil {
-			recommendations = append(recommendations, guestRecommendations...)
+		// If still no recommendations, get newest products across all categories
+		if err != nil || len(recommendations) == 0 {
+			err = db.Table("products").
+				Select("products.id, products.name, products.description, products.price, products.category, products.stock, 0 as view_count").
+				Where("products.id != ?", productID).
+				Order("created_at DESC").
+				Limit(limit).
+				Find(&recommendations).Error
 		}
 	}
 
-	return recommendations, nil
+	return recommendations, err
 }
 
 // GetCategoryRecommendations returns other popular products in the same category
@@ -58,7 +75,7 @@ func GetCategoryRecommendations(db *gorm.DB, productID uint, limit int) ([]Produ
 
 	var recommendations []ProductRecommendation
 
-	// Combine view counts from both user and guest interactions
+	// Try to get popular products in the same category
 	query := db.Table("products").
 		Select(`
 			products.id, 
@@ -80,9 +97,20 @@ func GetCategoryRecommendations(db *gorm.DB, productID uint, limit int) ([]Produ
 			GROUP BY product_id
 		) gi_counts ON products.id = gi_counts.product_id`).
 		Where("category = ? AND products.id != ?", product.Category, productID).
-		Order("view_count DESC").
+		Order("view_count DESC, created_at DESC"). // Consider newer products if no views
 		Limit(limit)
 
 	err := query.Find(&recommendations).Error
+
+	// If no recommendations found, get newest products in the same category
+	if err != nil || len(recommendations) == 0 {
+		err = db.Table("products").
+			Select("products.id, products.name, products.description, products.price, products.category, products.stock, 0 as view_count").
+			Where("category = ? AND products.id != ?", product.Category, productID).
+			Order("created_at DESC").
+			Limit(limit).
+			Find(&recommendations).Error
+	}
+
 	return recommendations, err
 }

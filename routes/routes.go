@@ -54,6 +54,7 @@ func SetupRouter(router *gin.Engine) {
 		admin.POST("/products/bulk", createBulkProducts)
 		admin.PUT("/products/:id", updateProduct)
 		admin.DELETE("/products/:id", deleteProduct)
+		admin.DELETE("/delete-products/:id", adminDeleteProduct)
 		admin.DELETE("/users/:id", deleteUserAdmin)
 	}
 }

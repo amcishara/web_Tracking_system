@@ -340,3 +340,65 @@ func getTrendingProducts(c *gin.Context) {
 		"trending": trendingWithDetails,
 	})
 }
+
+func adminDeleteProduct(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID format"})
+		return
+	}
+
+	// Start a transaction
+	tx := db.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		return
+	}
+
+	// Delete related records first
+	// 1. Delete from trending_products
+	if err := tx.Exec("DELETE FROM trending_products WHERE product_id = ?", id).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete trending data"})
+		return
+	}
+
+	// 2. Delete from user_interactions
+	if err := tx.Exec("DELETE FROM user_interactions WHERE product_id = ?", id).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user interactions"})
+		return
+	}
+
+	// 3. Delete from guest_interactions
+	if err := tx.Exec("DELETE FROM guest_interactions WHERE product_id = ?", id).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete guest interactions"})
+		return
+	}
+
+	// 4. Delete from cart_items if exists
+	if err := tx.Exec("DELETE FROM cart_items WHERE product_id = ?", id).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete cart items"})
+		return
+	}
+
+	// Finally delete the product
+	if err := tx.Delete(&models.Product{}, id).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete product"})
+		return
+	}
+
+	// Commit the transaction
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit transaction"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": fmt.Sprintf("Product %d and all related data deleted successfully", id),
+	})
+}
