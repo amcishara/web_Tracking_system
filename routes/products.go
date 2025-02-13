@@ -189,15 +189,11 @@ func getProductAsGuest(c *gin.Context) {
 }
 
 func getProductAsUser(c *gin.Context) {
-	// Get product ID from URL
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid product ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
-
-	// Get user ID from context
-	userID, _ := c.Get("user_id")
 
 	// Get product details
 	product, err := models.GetProductByID(db.DB, id)
@@ -207,12 +203,12 @@ func getProductAsUser(c *gin.Context) {
 	}
 
 	// Track the view
+	userID, _ := c.Get("user_id")
 	if err := models.TrackUserView(db.DB, userID.(uint), uint(id)); err != nil {
-		// Log the error but don't return, as we still want to show the product
 		fmt.Printf("Failed to track view: %v\n", err)
 	}
 
-	// Get collaborative recommendations
+	// Get recommendations
 	collaborative, err := models.GetCollaborativeRecommendations(db.DB, uint(id), 5)
 	if err != nil {
 		fmt.Printf("Failed to get collaborative recommendations: %v\n", err)
@@ -230,12 +226,28 @@ func getProductAsUser(c *gin.Context) {
 		fmt.Printf("Failed to get trending products: %v\n", err)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"product":               product,
-		"customers_also_viewed": collaborative,
-		"other_recommendations": category,
-		"trending_products":     trending,
-	})
+	response := models.ProductWithRecommendations{
+		Product: struct {
+			ID          uint    `json:"id"`
+			Name        string  `json:"name"`
+			Description string  `json:"description"`
+			Price       float64 `json:"price"`
+			Category    string  `json:"category"`
+			Stock       int     `json:"stock"`
+		}{
+			ID:          product.ID,
+			Name:        product.Name,
+			Description: product.Description,
+			Price:       product.Price,
+			Category:    product.Category,
+			Stock:       product.Stock,
+		},
+		CustomersAlsoViewed:  collaborative,
+		OtherRecommendations: category,
+		TrendingProducts:     trending,
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // Helper function to generate guest ID

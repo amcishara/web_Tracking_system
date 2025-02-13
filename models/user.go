@@ -10,10 +10,87 @@ import (
 	"gorm.io/gorm"
 )
 
+// Add email validation regex
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+
+// Add constants for validation
+const (
+	MinPasswordLength = 8
+	MaxPasswordLength = 72 // bcrypt max length
+)
+
+// Password validation rules
+var (
+	hasNumber = regexp.MustCompile(`\d`)
+	hasUpper  = regexp.MustCompile(`[A-Z]`)
+	hasLower  = regexp.MustCompile(`[a-z]`)
+	hasSymbol = regexp.MustCompile(`[!@#$%^&*(),.?":{}|<>]`)
+)
+
+// Add valid roles constant
+var ValidRoles = map[string]bool{
+	"user":  true,
+	"admin": true,
+}
+
+// Add validation function
+func isValidEmail(email string) bool {
+	return emailRegex.MatchString(email)
+}
+
+// Enhanced password validation function
+func isValidPassword(password string) error {
+	if password == "" {
+		return fmt.Errorf("password cannot be empty")
+	}
+
+	// Check for common passwords first
+	commonPasswords := map[string]bool{
+		"password123": true,
+		"12345678":    true,
+		"qwerty123":   true,
+		// Add more common passwords as needed
+	}
+	if commonPasswords[strings.ToLower(password)] { // Convert to lowercase for comparison
+		return fmt.Errorf("password is too common, please choose a stronger password")
+	}
+
+	if len(password) < MinPasswordLength {
+		return fmt.Errorf("password must be at least %d characters", MinPasswordLength)
+	}
+
+	if len(password) > MaxPasswordLength {
+		return fmt.Errorf("password must not exceed %d characters", MaxPasswordLength)
+	}
+
+	if !hasNumber.MatchString(password) {
+		return fmt.Errorf("password must contain at least one number")
+	}
+
+	if !hasUpper.MatchString(password) {
+		return fmt.Errorf("password must contain at least one uppercase letter")
+	}
+
+	if !hasLower.MatchString(password) {
+		return fmt.Errorf("password must contain at least one lowercase letter")
+	}
+
+	if !hasSymbol.MatchString(password) {
+		return fmt.Errorf("password must contain at least one special character")
+	}
+
+	return nil
+}
+
+// Add role validation function
+func isValidRole(role string) bool {
+	return ValidRoles[role]
+}
+
 type User struct {
 	UserID    uint      `gorm:"primaryKey;column:user_id" json:"user_id"`
-	Email     string    `gorm:"unique;not null" json:"email"`
-	Password  string    `gorm:"not null" json:"-"`
+	Email     string    `gorm:"unique;not null" json:"email" binding:"required"`
+	Password  string    `gorm:"not null" json:"password" binding:"required"`
 	Role      string    `gorm:"default:user" json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -23,56 +100,15 @@ func (User) TableName() string {
 	return "users"
 }
 
-// Add this constant for valid roles
-var validRoles = map[string]bool{
-	"admin": true,
-	"user":  true,
-}
-
-// Add role validation function
-func validateRole(role string) error {
-	if !validRoles[role] {
-		return fmt.Errorf("invalid role")
-	}
-	return nil
-}
-
 // User-related functions
-func validateEmail(email string) error {
-	if strings.TrimSpace(email) == "" {
-		return fmt.Errorf("email cannot be empty")
-	}
-
-	// Simple email regex pattern
-	emailPattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
-	match, _ := regexp.MatchString(emailPattern, email)
-	if !match {
-		return fmt.Errorf("invalid email format")
-	}
-	return nil
-}
-
-// Add password validation function
-func validatePassword(password string) error {
-	if strings.TrimSpace(password) == "" {
-		return fmt.Errorf("password cannot be empty")
-	}
-	return nil
-}
-
 func CreateUser(db *gorm.DB, u *User) error {
-	// Validate email
-	if err := validateEmail(u.Email); err != nil {
-		return err
+	// Validate email format
+	if !isValidEmail(u.Email) {
+		return fmt.Errorf("invalid email format")
 	}
 
 	// Validate password
-	if err := validatePassword(u.Password); err != nil {
-		return err
-	}
-
-	// Validate role
-	if err := validateRole(u.Role); err != nil {
+	if err := isValidPassword(u.Password); err != nil {
 		return err
 	}
 
@@ -90,7 +126,6 @@ func CreateUser(db *gorm.DB, u *User) error {
 	}
 	u.Password = hashedPassword
 
-	// Create user
 	result := db.Create(u)
 	return result.Error
 }
@@ -119,10 +154,9 @@ func GetUserByID(db *gorm.DB, id int) (*User, error) {
 }
 
 func UpdateUser(db *gorm.DB, u *User) error {
-	// First check if user exists
-	var existingUser User
-	if err := db.First(&existingUser, u.UserID).Error; err != nil {
-		return fmt.Errorf("user not found")
+	// Validate role if it's being updated
+	if u.Role != "" && !isValidRole(u.Role) {
+		return fmt.Errorf("invalid role: %s", u.Role)
 	}
 
 	// Check if email is being changed and if it already exists
@@ -132,19 +166,9 @@ func UpdateUser(db *gorm.DB, u *User) error {
 		return fmt.Errorf("email '%s' already taken", u.Email)
 	}
 
-	// Validate email if it's being updated
-	if err := validateEmail(u.Email); err != nil {
-		return err
-	}
-
-	// Validate role if it's being updated
-	if err := validateRole(u.Role); err != nil {
-		return err
-	}
-
-	// If password is being updated, validate and hash it
+	// If password is being updated, hash it
 	if u.Password != "" {
-		if err := validatePassword(u.Password); err != nil {
+		if err := isValidPassword(u.Password); err != nil {
 			return err
 		}
 		hashedPassword, err := utils.HashPassword(u.Password)
@@ -152,9 +176,6 @@ func UpdateUser(db *gorm.DB, u *User) error {
 			return err
 		}
 		u.Password = hashedPassword
-	} else {
-		// Keep existing password if not updating
-		u.Password = existingUser.Password
 	}
 
 	result := db.Save(u)

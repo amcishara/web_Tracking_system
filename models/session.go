@@ -44,7 +44,7 @@ func DeleteSession(db *gorm.DB, token string) error {
 
 func GetSession(db *gorm.DB, token string) (*Session, error) {
 	var session Session
-	result := db.Preload("User").Where("token = ?", token).First(&session)
+	result := db.Where("token = ? AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)", token).First(&session)
 	if result.Error != nil {
 		return nil, result.Error
 	}

@@ -5,9 +5,14 @@ import (
 )
 
 type ProductRecommendation struct {
-	ProductView         // Embed the ProductView struct for basic product info
-	ViewCount   int     `json:"view_count,omitempty"`
-	Relevance   float64 `json:"relevance_score,omitempty"`
+	ID          uint    `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
+	Category    string  `json:"category"`
+	Stock       int     `json:"stock"`
+	ViewCount   int     `json:"-"` // Hide from JSON output but keep in struct
+	Relevance   float64 `json:"-"` // Hide from JSON output but keep in struct
 }
 
 // GetCollaborativeRecommendations returns exactly 5 most relevant products
@@ -160,6 +165,8 @@ func GetCategoryRecommendations(db *gorm.DB, productID uint, limit int) ([]Produ
 			) t ON p.id = t.product_id
 			WHERE p.category = ? 
 			AND p.id != ?
+			AND p.stock > 0
+			LIMIT 5
 		)
 		SELECT * FROM CategoryScores
 		ORDER BY relevance_score DESC, view_count DESC, id ASC
@@ -206,6 +213,7 @@ func GetCategoryRecommendations(db *gorm.DB, productID uint, limit int) ([]Produ
 			WHERE p.id != ? 
 			AND p.id NOT IN (?)
 			AND p.category != ?
+			AND p.stock > 0
 			ORDER BY ABS(p.price - ?) ASC, relevance_score DESC
 			LIMIT ?
 		`,
@@ -248,6 +256,7 @@ func GetCategoryRecommendations(db *gorm.DB, productID uint, limit int) ([]Produ
 			) t ON p.id = t.product_id
 			WHERE p.id != ? 
 			AND p.id NOT IN (?)
+			AND p.stock > 0
 			ORDER BY view_count DESC, created_at DESC
 			LIMIT ?
 		`,
@@ -257,6 +266,11 @@ func GetCategoryRecommendations(db *gorm.DB, productID uint, limit int) ([]Produ
 		if result.Error == nil && len(popularRecs) > 0 {
 			recommendations = append(recommendations, popularRecs...)
 		}
+	}
+
+	// Ensure we only return exactly 5 recommendations
+	if len(recommendations) > limit {
+		recommendations = recommendations[:limit]
 	}
 
 	return recommendations, result.Error

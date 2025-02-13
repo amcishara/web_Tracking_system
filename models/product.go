@@ -29,9 +29,17 @@ type ProductResponse struct {
 }
 
 type ProductWithRecommendations struct {
-	*ProductResponse             `json:"product"`
-	CollaborativeRecommendations []ProductRecommendation `json:"customers_also_viewed"`
-	CategoryRecommendations      []ProductRecommendation `json:"category_recommendations"`
+	Product struct {
+		ID          uint    `json:"id"`
+		Name        string  `json:"name"`
+		Description string  `json:"description"`
+		Price       float64 `json:"price"`
+		Category    string  `json:"category"`
+		Stock       int     `json:"stock"`
+	} `json:"product"`
+	CustomersAlsoViewed  []ProductRecommendation `json:"customers_also_viewed"`
+	OtherRecommendations []ProductRecommendation `json:"other_recommendations"`
+	TrendingProducts     []TrendingProduct       `json:"trending_products"`
 }
 
 func CreateProduct(db *gorm.DB, product *Product) error {

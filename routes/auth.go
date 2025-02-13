@@ -19,6 +19,9 @@ func signup(c *gin.Context) {
 		return
 	}
 
+	// Debug print
+	fmt.Printf("Received signup request: %+v\n", user)
+
 	if err := models.CreateUser(db.DB, &user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

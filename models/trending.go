@@ -12,7 +12,7 @@ type TrendingProduct struct {
 	Price       float64 `json:"price"`
 	Category    string  `json:"category"`
 	Stock       int     `json:"stock"`
-	ViewCount   int     `json:"view_count,omitempty"`
+	ViewCount   int     `json:"-"` // Hide from JSON output but keep in struct
 }
 
 // TrendingProductDB is the database model for trending products
