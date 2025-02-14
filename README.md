@@ -4,7 +4,7 @@ A smart e-commerce tracking system that provides personalized product recommenda
 
 ## 📊 System Design
 
-[ER Diagram Preview](https://dbdiagram.io/d/67ac55c9263d6cf9a0de6d79/preview)
+[ER Diagram Preview](https://dbdiagram.io/d/67ac55c9263d6cf9a0de6d79)
 
 Key Entities:
 - Products
