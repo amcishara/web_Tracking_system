@@ -24,7 +24,7 @@ func SetupRouter(router *gin.Engine) {
 
 	// Protected routes
 	protected := router.Group("/")
-	protected.Use(middleware.AuthMiddleware())
+	protected.Use(middleware.AuthRequired())
 	{
 		protected.PUT("/user/:id", updateUser)
 		protected.DELETE("/user/:id", deleteUser)
@@ -34,17 +34,18 @@ func SetupRouter(router *gin.Engine) {
 
 	// Customer routes (with cart functionality)
 	customer := router.Group("/")
-	customer.Use(middleware.AuthMiddleware())
+	customer.Use(middleware.AuthRequired())
 	customer.Use(middleware.CustomerMiddleware())
 	{
 		customer.POST("/cart", addToCart)
 		customer.DELETE("/cart/:id", removeFromCart)
 		customer.GET("/cart", getCart)
+		customer.PATCH("/cart/:id/quantity", updateQuantity)
 	}
 
 	// Admin routes
 	admin := router.Group("/admin")
-	admin.Use(middleware.AuthMiddleware())
+	admin.Use(middleware.AuthRequired())
 	admin.Use(middleware.AdminMiddleware())
 	{
 		admin.GET("/users", getUsers)

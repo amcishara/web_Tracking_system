@@ -21,10 +21,20 @@ func SetupTestDB() {
 	}
 	fmt.Println("Test database connection successful")
 
-	// Migrate test database
+	// Drop existing tables in correct order
+	TestDB.Migrator().DropTable(&models.CartItem{})
+	TestDB.Migrator().DropTable(&models.GuestInteraction{})
+	TestDB.Migrator().DropTable(&models.Product{})
+	TestDB.Migrator().DropTable(&models.Session{})
+	TestDB.Migrator().DropTable(&models.User{})
+
+	// Migrate test database with all required tables
 	err = TestDB.AutoMigrate(
 		&models.User{},
+		&models.Product{},
 		&models.Session{},
+		&models.CartItem{},
+		&models.GuestInteraction{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate test database:", err)
@@ -33,11 +43,21 @@ func SetupTestDB() {
 
 // CleanupTestDB drops all test tables
 func CleanupTestDB() {
-	TestDB.Migrator().DropTable(&models.User{})
+	TestDB.Migrator().DropTable(&models.CartItem{})
+	TestDB.Migrator().DropTable(&models.GuestInteraction{})
+	TestDB.Migrator().DropTable(&models.Product{})
 	TestDB.Migrator().DropTable(&models.Session{})
+	TestDB.Migrator().DropTable(&models.User{})
 }
 
 // TruncateTable cleans a specific table between tests
 func TruncateTable(tableName string) {
-	TestDB.Exec(fmt.Sprintf("TRUNCATE TABLE %s", tableName))
+	// Disable foreign key checks
+	TestDB.Exec("SET FOREIGN_KEY_CHECKS = 0")
+
+	// Truncate table
+	TestDB.Exec("TRUNCATE TABLE " + tableName)
+
+	// Re-enable foreign key checks
+	TestDB.Exec("SET FOREIGN_KEY_CHECKS = 1")
 }

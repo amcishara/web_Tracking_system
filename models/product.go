@@ -42,7 +42,25 @@ type ProductWithRecommendations struct {
 	TrendingProducts     []TrendingProduct       `json:"trending_products"`
 }
 
+// CreateProduct creates a new product with validation
 func CreateProduct(db *gorm.DB, product *Product) error {
+	// Validate price
+	if product.Price < 0 {
+		return fmt.Errorf("price cannot be negative")
+	}
+
+	// Validate stock
+	if product.Stock < 0 {
+		return fmt.Errorf("stock cannot be negative")
+	}
+
+	// Check for duplicate name
+	var count int64
+	db.Model(&Product{}).Where("name = ?", product.Name).Count(&count)
+	if count > 0 {
+		return fmt.Errorf("product with name '%s' already exists", product.Name)
+	}
+
 	return db.Create(product).Error
 }
 

@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -10,35 +9,34 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func AuthMiddleware() gin.HandlerFunc {
+func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get token from header
-		token := c.GetHeader("Authorization")
+		// Get token from cookie or Authorization header
+		token, _ := c.Cookie("token")
 		if token == "" {
-			// Try to get from cookie if not in header
-			token, _ = c.Cookie("token")
-			if token == "" {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization required"})
-				c.Abort()
-				return
+			// Check Authorization header
+			authHeader := c.GetHeader("Authorization")
+			if len(strings.Split(authHeader, " ")) == 2 {
+				token = strings.Split(authHeader, " ")[1]
 			}
 		}
 
-		// Remove Bearer prefix if present
-		token = strings.TrimPrefix(token, "Bearer ")
+		if token == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
+			c.Abort()
+			return
+		}
 
-		// Get session
-		var session models.Session
-		if err := db.DB.Where("token = ?", token).First(&session).Error; err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		// Validate session
+		session, err := models.GetSession(db.DB, token)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired session"})
 			c.Abort()
 			return
 		}
 
 		// Set user ID in context
 		c.Set("user_id", session.UserID)
-		fmt.Printf("Setting user_id in context: %d\n", session.UserID) // Add debug log
-
 		c.Next()
 	}
 }
