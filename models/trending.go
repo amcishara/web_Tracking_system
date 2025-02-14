@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -52,6 +54,12 @@ func GetTrendingProducts(db *gorm.DB, limit int) ([]TrendingProduct, error) {
 
 // UpdateTrendingViews updates the view count for a product in trending_products
 func UpdateTrendingViews(tx *gorm.DB, productID uint, title string) error {
+	// First verify the product exists
+	var product Product
+	if err := tx.First(&product, productID).Error; err != nil {
+		return fmt.Errorf("product not found")
+	}
+
 	result := tx.Exec(`
         INSERT INTO trending_products (product_id, title, total_views)
         VALUES (?, ?, 1)
