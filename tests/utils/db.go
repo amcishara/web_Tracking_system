@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/amcishara/web_Tracking_system/db"
 	"github.com/amcishara/web_Tracking_system/models"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
@@ -13,12 +13,16 @@ var TestDB *gorm.DB
 
 // SetupTestDB initializes test database connection
 func SetupTestDB() {
-	var err error
-	dsn := "root:@tcp(127.0.0.1:3306)/test_db?charset=utf8mb4&parseTime=True&loc=Local"
-	TestDB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	// Setup test environment variables
+	SetupTestEnv()
+
+	// Initialize test database connection
+	db, err := db.InitDB()
 	if err != nil {
-		log.Fatal("Failed to connect to test database:", err)
+		log.Fatalf("Failed to connect to test database: %v", err)
 	}
+
+	TestDB = db
 	fmt.Println("Test database connection successful")
 
 	// Drop existing tables in correct order

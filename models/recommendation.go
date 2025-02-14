@@ -34,7 +34,7 @@ func GetCollaborativeRecommendations(db *gorm.DB, productID uint, limit int) ([]
 			JOIN user_interactions ui2 ON ui1.user_id = ui2.user_id AND ui2.product_id = ?
 			WHERE p.id != ? AND p.stock > 0
 			GROUP BY p.id, p.name, p.description, p.price, p.category, p.stock
-			HAVING COUNT(*) >= 2
+			HAVING COUNT(*) >= 1
 		)
 		SELECT * FROM ProductViews
 		ORDER BY relevance_score DESC, view_count DESC, id ASC

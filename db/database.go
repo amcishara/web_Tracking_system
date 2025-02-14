@@ -3,22 +3,45 @@ package db
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/amcishara/web_Tracking_system/models"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 var DB *gorm.DB
 
-func InitDB() {
-	var err error
-	dsn := "root:@tcp(127.0.0.1:3306)/web_db?charset=utf8mb4&parseTime=True&loc=Local"
-	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+func InitDB() (*gorm.DB, error) {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found, using default values")
 	}
-	fmt.Println("Database connection successful")
+
+	// Get environment variables with fallback values
+	dbHost := getEnv("DB_HOST", "localhost")
+	dbUser := getEnv("DB_USER", "root")
+	dbPassword := getEnv("DB_PASSWORD", "")
+	dbName := getEnv("DB_NAME", "test_db")
+	dbPort := getEnv("DB_PORT", "3306")
+
+	// Create DSN string
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		dbUser,
+		dbPassword,
+		dbHost,
+		dbPort,
+		dbName,
+	)
+
+	// Open database connection
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %v", err)
+	}
+
+	DB = db // Set the global DB variable
 
 	// Check if tables exist
 	hasUsers := DB.Migrator().HasTable(&models.User{})
@@ -104,5 +127,14 @@ func InitDB() {
 		log.Fatal("Failed to migrate database:", err)
 	}
 
-	fmt.Println("Database migration completed successfully")
+	fmt.Println("Database connection and migration completed successfully")
+	return DB, nil
+}
+
+// Helper function to get environment variable with fallback
+func getEnv(key, fallback string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return fallback
 }
