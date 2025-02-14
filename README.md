@@ -129,6 +129,21 @@ Run all tests:
 go test -v ./tests/...
 ```
 
+### Running Specific Test Suites
+```bash
+# Auth Tests (User & Session)
+go test -v ./tests/auth/...
+
+# Product Tests
+go test -v ./tests/product/...
+
+# Cart Tests
+go test -v ./tests/cart/...
+
+# Recommendation Tests
+go test -v ./tests/recommendations/...
+```
+
 ### Test Coverage
 - Authentication & Authorization
 - Product Management
